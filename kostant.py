@@ -15,6 +15,7 @@ def path(rel) -> str:
 pygame.init()
 
 WIDTH, HEIGHT = pygame.display.Info().current_w, pygame.display.Info().current_h
+FONT = pygame.font.SysFont("Consolas", int(WIDTH // 32))
 scr = pygame.display.set_mode((WIDTH, HEIGHT), vsync=True)
 
 BLACK = (0, 0, 0)
@@ -34,7 +35,8 @@ clock = pygame.time.Clock()
 
 class Player():
     def __init__(self, img: pygame.Surface):
-        self.velocity = 5
+        self.accel = 1
+        self.x_vel = 0
         self.img = img
         self.rect = img.get_rect()
         self.rect.centerx = WIDTH // 2
@@ -46,8 +48,7 @@ class Player():
     def death(self, title="ALERT", text="MATEUSZ NIE ŻYJE"):
         def m(title, text, icon):
             ctypes.windll.user32.MessageBoxW(0, text, title, icon | 0x1)
-        for _ in range(3):
-            threading.Thread(target=m, args=(title, text, random.choice([0x30, 0x10]))).start()
+        threading.Thread(target=m, args=(title, text, random.choice([0x30, 0x10]))).start()
 
 class Enemy():
     def __init__(self, img: pygame.Surface):
@@ -71,6 +72,8 @@ class Enemy():
         scr.blit(self.img, self.rect.topleft)
 
     def is_collision(self, player):
+        if player is None:
+            return False
         player_rect: pygame.Rect = player.rect
         enemy_rect: pygame.Rect = self.rect
 
@@ -83,6 +86,12 @@ class Enemy():
                     if self.img.get_at((x - enemy_rect.left, y - enemy_rect.top))[3] > 0:
                         return True
         return False
+
+score = 0
+
+def draw_score():
+    surf = FONT.render(str(score), False, BLACK)
+    scr.blit(surf, (WIDTH - surf.get_width(), 0))
 
 gierek = Player(MATEUSZ)
 enemies = [Enemy(ENEMY) for _ in range(1)]
@@ -97,28 +106,53 @@ while running:
     
     k_pressed = pygame.key.get_pressed()
     
+    gierek.x_vel *= 0.96 # tarcie
+
     if k_pressed[pygame.K_d]:
-        gierek.rect.x += gierek.velocity
+        gierek.x_vel += gierek.accel
     if k_pressed[pygame.K_a]:
-        gierek.rect.x -= gierek.velocity
+        gierek.x_vel -= gierek.accel
+    gierek.rect.x += gierek.x_vel
     
     print(game_time)
     if game_time % 100 == 0:
         enemies.append(Enemy(ENEMY))
+    
+    if gierek.rect.left < 0:
+        nowy_gierk = Player(MATEUSZ)
+        nowy_gierk.rect.x = gierek.rect.x + WIDTH
+    elif gierek.rect.right > WIDTH:
+        nowy_gierk = Player(MATEUSZ)
+        nowy_gierk.rect.x = gierek.rect.x - WIDTH
+    else:
+        nowy_gierk = None
+    
+    if gierek.rect.left < -gierek.rect.w:
+        gierek.rect.x += WIDTH
+        nowy_gierk = None
+    
+    elif gierek.rect.right > WIDTH + gierek.rect.w:
+        gierek.rect.x -= WIDTH
 
     for enemy in enemies:
         enemy.update()
         enemy.draw()
-        if enemy.is_collision(gierek):
-            gierek.death(title="WYNIK: " + str(game_time // 50 * 50))
+        if enemy.is_collision(gierek) or enemy.is_collision(nowy_gierk):
+            gierek.death(title="WYNIK: " + str(score))
             running = 0
     
+    if nowy_gierk is not None:
+        nowy_gierk.draw()
+
     gierek.draw()
+
+    draw_score()
 
     pygame.display.flip()
     scr.fill(WHITE)
     clock.tick(75)
     game_time += 1
+    score = game_time // 50 * 50
         
 
 pygame.quit()
