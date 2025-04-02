@@ -43,19 +43,21 @@ class Player():
         self.rect.bottom = HEIGHT
     
     def draw(self):
+        self.img.set_alpha(active_color[0] / 255 * 150 + 105)
         scr.blit(self.img, self.rect.topleft)
     
     def death(self, title="ALERT", text="MATEUSZ NIE ŻYJE"):
         if hasattr(ctypes, "windll"):
             def m(title, text, icon):
+                pygame.time.wait(400)
                 ctypes.windll.user32.MessageBoxW(0, text, title, icon | 0x1)
-            threading.Thread(target=m, args=(title, text, random.choice([0x30, 0x10]))).start()
+            threading.Thread(target=m, args=(title, text, 0x10)).start()
         else:
             pass
 
 class Enemy():
     def __init__(self, img: pygame.Surface):
-        this_size = (ENEMY_WIDTH * random.uniform(0.9, 2), ENEMY_HEIGHT * random.uniform(0.9, 2))
+        this_size = (ENEMY_WIDTH * random.uniform(0.9, 1.6), ENEMY_HEIGHT * random.uniform(0.9, 2))
         self.img = pygame.transform.scale(img, this_size)
         self.rect = self.img.get_rect()
         self.rect.x = random.randint(0, WIDTH - self.rect.width)
@@ -64,6 +66,7 @@ class Enemy():
         self.accel *= ((this_size[0] * this_size[1]) / 8192) ** 0.5
         # self.accel += random.uniform(-1/16, 1/8)
         self.velocity_y = 1
+        self.is_killer = False
     
     def update(self):
         self.rect.y += self.velocity_y
@@ -74,21 +77,30 @@ class Enemy():
             self.velocity_y = 0
 
     def draw(self):
+        if not self.is_killer:
+            self.img.set_alpha(active_color[0] / 255 * 150 + 105)
+        else:
+            self.img.set_alpha(255)
         scr.blit(self.img, self.rect.topleft)
 
     def is_collision(self, player):
-        if player is None:
-            return False
-        player_rect: pygame.Rect = player.rect
-        enemy_rect: pygame.Rect = self.rect
+        # if player is None:
+        #     return False
 
-        if not enemy_rect.colliderect(player_rect):
-            return False
+        # if self.rect.y > player.rect.centery:
+        #     return False
         
-        for x in range(enemy_rect.left, enemy_rect.right):
-            for y in range(enemy_rect.top, enemy_rect.bottom):
-                if player_rect.collidepoint(x, y):
-                    if self.img.get_at((x - enemy_rect.left, y - enemy_rect.top))[3] > 0:
+        # if not self.rect.colliderect(player.rect):
+        #     return False
+
+        if (player is None) or (self.rect.centery > player.rect.centery) or (not self.rect.colliderect(player.rect)):
+            return False
+    
+        for x in range(self.rect.left, self.rect.right):
+            for y in range(self.rect.top, self.rect.bottom):
+                if player.rect.collidepoint(x, y):
+                    if self.img.get_at((x - self.rect.left, y - self.rect.top))[3] > 0:
+                        self.is_killer = True
                         return True
         return False
 
@@ -120,7 +132,7 @@ def get_next_color(current: tuple, is_day: bool) -> tuple[tuple, bool]:
 game_time = 1
 friction = 0.97
 is_day = 1
-active_color = WHITE
+active_color = WHITE if is_day else BLACK
 animation_running = 0
 
 running = 1
@@ -143,12 +155,14 @@ while running:
     gierek.x_vel *= friction # tarcie
     gierek.rect.x += gierek.x_vel
     
+
     if game_time % 400 == 0:
         for _ in range(2): enemies.append(Enemy(ENEMY_IMG))
     
     if game_time % 750 == 0:
         is_day = not is_day
         animation_running = 1
+
 
     if gierek.rect.left < 0:
         nowy_gierk = Player(MATEUSZ_IMG)
@@ -159,6 +173,7 @@ while running:
     else:
         nowy_gierk = None
     
+
     if gierek.rect.left < -gierek.rect.w:
         gierek.rect.x += WIDTH
         nowy_gierk = None
@@ -168,6 +183,7 @@ while running:
 
     if nowy_gierk is not None:
         nowy_gierk.draw()
+
 
     for enemy in enemies:
         enemy.update()
@@ -183,13 +199,16 @@ while running:
     draw_score()
 
     if animation_running:
-        active_color, should_run = get_next_color(active_color, is_day)
+        active_color, animation_running = get_next_color(active_color, is_day)
 
     pygame.display.flip()
     scr.fill(active_color)
     clock.tick(75)
     game_time += 1
     score = game_time // 50 * 50
-        
+
+    if running == 0:
+        pygame.time.wait(350) #show impact
+    
 
 pygame.quit()
