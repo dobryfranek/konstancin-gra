@@ -16,7 +16,7 @@ pygame.init()
 
 WIDTH, HEIGHT = pygame.display.Info().current_w, pygame.display.Info().current_h
 FONT = pygame.font.SysFont("Consolas", int(WIDTH // 32))
-scr = pygame.display.set_mode((WIDTH, HEIGHT))
+scr = pygame.display.set_mode((WIDTH, HEIGHT), flags=pygame.FULLSCREEN)
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -46,9 +46,12 @@ class Player():
         scr.blit(self.img, self.rect.topleft)
     
     def death(self, title="ALERT", text="MATEUSZ NIE ŻYJE"):
-        def m(title, text, icon):
-            ctypes.windll.user32.MessageBoxW(0, text, title, icon | 0x1)
-        threading.Thread(target=m, args=(title, text, random.choice([0x30, 0x10]))).start()
+        if hasattr(ctypes, "windll"):
+            def m(title, text, icon):
+                ctypes.windll.user32.MessageBoxW(0, text, title, icon | 0x1)
+            threading.Thread(target=m, args=(title, text, random.choice([0x30, 0x10]))).start()
+        else:
+            pass
 
 class Enemy():
     def __init__(self, img: pygame.Surface):
