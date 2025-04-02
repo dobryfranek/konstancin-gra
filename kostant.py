@@ -95,7 +95,7 @@ class Enemy():
 score = 0
 
 def draw_score():
-    surf = FONT.render(str(score), False, BLACK if is_day else WHITE)
+    surf = FONT.render(str(score), False, tuple(255 - i for i in active_color))
     scr.blit(surf, (WIDTH - surf.get_width(), 0))
 
 gierek = Player(MATEUSZ_IMG)
