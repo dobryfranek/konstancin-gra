@@ -16,7 +16,7 @@ pygame.init()
 
 WIDTH, HEIGHT = pygame.display.Info().current_w, pygame.display.Info().current_h
 FONT = pygame.font.SysFont("Consolas", int(WIDTH // 32))
-scr = pygame.display.set_mode((WIDTH, HEIGHT))
+scr = pygame.display.set_mode((WIDTH, HEIGHT), vsync=1, flags=pygame.FULLSCREEN)
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -24,12 +24,12 @@ WHITE = (255, 255, 255)
 PLAYER_WIDTH = WIDTH // 18
 PLAYER_HEIGHT = PLAYER_WIDTH * 0.9
 
-MATEUSZ = pygame.image.load(path("player.png"))
-MATEUSZ = pygame.transform.scale(MATEUSZ, (PLAYER_WIDTH, PLAYER_HEIGHT))
+MATEUSZ_IMG = pygame.image.load(path("player.png"))
+MATEUSZ_IMG = pygame.transform.scale(MATEUSZ_IMG, (PLAYER_WIDTH, PLAYER_HEIGHT))
 
 ENEMY_WIDTH = WIDTH // 30
 ENEMY_HEIGHT = ENEMY_WIDTH * 0.9
-ENEMY = pygame.image.load(path("enemy.png")).convert_alpha()
+ENEMY_IMG = pygame.image.load(path("enemy.png")).convert_alpha()
 
 clock = pygame.time.Clock()
 
@@ -46,9 +46,12 @@ class Player():
         scr.blit(self.img, self.rect.topleft)
     
     def death(self, title="ALERT", text="MATEUSZ NIE ŻYJE"):
-        def m(title, text, icon):
-            ctypes.windll.user32.MessageBoxW(0, text, title, icon | 0x1)
-        threading.Thread(target=m, args=(title, text, random.choice([0x30, 0x10]))).start()
+        if hasattr(ctypes, "windll"):
+            def m(title, text, icon):
+                ctypes.windll.user32.MessageBoxW(0, text, title, icon | 0x1)
+            threading.Thread(target=m, args=(title, text, random.choice([0x30, 0x10]))).start()
+        else:
+            pass
 
 class Enemy():
     def __init__(self, img: pygame.Surface):
@@ -92,15 +95,33 @@ class Enemy():
 score = 0
 
 def draw_score():
-    surf = FONT.render(str(score), False, BLACK if current_color else WHITE)
+    surf = FONT.render(str(score), False, BLACK if is_day else WHITE)
     scr.blit(surf, (WIDTH - surf.get_width(), 0))
 
-gierek = Player(MATEUSZ)
-enemies = [Enemy(ENEMY) for _ in range(1)]
+gierek = Player(MATEUSZ_IMG)
+enemies = [Enemy(ENEMY_IMG) for _ in range(1)]
+
+def get_next_color(current: tuple, is_day: bool) -> tuple[tuple, bool]:
+    animation_should_run = 1
+    if is_day:
+        next_color = tuple(i + 1 for i in current)
+        if next_color[0] >= 255:
+            next_color = (255, 255, 255)
+            animation_should_run = 0
+
+    else:
+        next_color = tuple(i - 1 for i in current)
+        if next_color[0] <= 0:
+            next_color = (0, 0, 0)
+            animation_should_run = 0
+
+    return (next_color, animation_should_run)
 
 game_time = 1
 friction = 0.97
-current_color = 1
+is_day = 1
+active_color = WHITE
+animation_running = 0
 
 running = 1
 while running:
@@ -123,16 +144,17 @@ while running:
     gierek.rect.x += gierek.x_vel
     
     if game_time % 400 == 0:
-        for _ in range(2): enemies.append(Enemy(ENEMY))
+        for _ in range(2): enemies.append(Enemy(ENEMY_IMG))
     
-    if game_time % 500 == 0:
-        current_color = not current_color
+    if game_time % 750 == 0:
+        is_day = not is_day
+        animation_running = 1
 
     if gierek.rect.left < 0:
-        nowy_gierk = Player(MATEUSZ)
+        nowy_gierk = Player(MATEUSZ_IMG)
         nowy_gierk.rect.x = gierek.rect.x + WIDTH
     elif gierek.rect.right > WIDTH:
-        nowy_gierk = Player(MATEUSZ)
+        nowy_gierk = Player(MATEUSZ_IMG)
         nowy_gierk.rect.x = gierek.rect.x - WIDTH
     else:
         nowy_gierk = None
@@ -147,20 +169,24 @@ while running:
     if nowy_gierk is not None:
         nowy_gierk.draw()
 
-    gierek.draw()
-
     for enemy in enemies:
         enemy.update()
-        enemy.draw()
         if enemy.is_collision(gierek) or enemy.is_collision(nowy_gierk):
             gierek.death(title="WYNIK: " + str(score))
             running = 0
-    
+
+    gierek.draw()
+
+    for enemy in enemies:
+        enemy.draw()
 
     draw_score()
 
-    pygame.display.update()
-    scr.fill(WHITE if current_color else BLACK)
+    if animation_running:
+        active_color, should_run = get_next_color(active_color, is_day)
+
+    pygame.display.flip()
+    scr.fill(active_color)
     clock.tick(75)
     game_time += 1
     score = game_time // 50 * 50
