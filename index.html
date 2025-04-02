@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta property="og:title" content="Pobierz Konstancin">
+    <meta property="og:description" content="Apokalipsa w Konstancinie-Jeziornej zaczęła się, gdy z nieba zaczęły spadać ogromne głazy, niszcząc miasto. Zniszczeniu uległy domy, a ludzie w panice próbowali znaleźć schronienie, nie wiedząc, gdzie spadnie kolejny kamień. Wśród ruin zaczęły pojawiać się dziwne cienie, a miasto pogrążyło się w mrocznej grozie.">
+    <meta property="og:image" content="https://raw.githubusercontent.com/dobryfranek/konstancin-gra/refs/heads/main/preview.png">
+    <meta property="og:url" content="https://dobryfranek.github.io/gra-konstancin">
+    <meta name="theme-color" content="#00dd00">
     <title>Gra Konstancin Download</title>
     <style>
         body {
@@ -15,14 +20,29 @@
             align-items: center;
         }
     </style>
-    <meta property="og:title" content="Pobierz Konstancin">
-    <meta property="og:description" content="Apokalipsa w Konstancinie-Jeziornej zaczęła się, gdy z nieba zaczęły spadać ogromne głazy, niszcząc miasto. Zniszczeniu uległy domy, a ludzie w panice próbowali znaleźć schronienie, nie wiedząc, gdzie spadnie kolejny kamień. Wśród ruin zaczęły pojawiać się dziwne cienie, a miasto pogrążyło się w mrocznej grozie.">
-    <meta property="og:image" content="https://raw.githubusercontent.com/dobryfranek/konstancin-gra/refs/heads/main/preview.png">
-    <meta property="og:url" content="https://dobryfranek.github.io/gra-konstancin">
-    <meta name="theme-color" content="#00dd00">
+    <script>
+        const skaluj = () =>
+        {
 
+        let w = window.innerWidth;
+        let h = window.innerHeight;
+        let img = document.getElementById("img");
+
+        if (h > w) { // phone probably
+            img.style.width = "90vw";
+        }
+
+        else {
+            img.style.width = "auto";
+        };
+
+        };
+
+        window.addEventListener("resize", skaluj);
+        document.addEventListener("DOMContentLoaded", skaluj);
+    </script>
 </head>
 <body>
-    <a href="https://github.com/dobryfranek/konstancin-gra/releases/download/tag/kostant.exe"><img src="link.png"></a>
+    <a href="https://github.com/dobryfranek/konstancin-gra/releases/download/tag/kostant.exe"><img id="img" src="link.png"></a>
 </body>
 </html>
