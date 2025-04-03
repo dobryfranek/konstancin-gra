@@ -1,4 +1,3 @@
-#da
 import threading
 import ctypes
 import random
