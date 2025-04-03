@@ -53,7 +53,10 @@ class Player():
                 ctypes.windll.user32.MessageBoxW(0, text, title, icon | 0x1)
             threading.Thread(target=m, args=(title, text, 0x10)).start()
         else:
-            pass
+            def m(title, text, icon):
+                pygame.time.wait(400)
+                os.system(f'zenity {icon} --title="{title}" --text="{text}"')
+            threading.Thread(target=m, args=(title, text, "--error")).start()
 
 class Enemy():
     def __init__(self, img: pygame.Surface):
