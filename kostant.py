@@ -1,3 +1,4 @@
+#da
 import threading
 import ctypes
 import random
@@ -42,6 +43,7 @@ class Player():
         self.rect = img.get_rect()
         self.rect.centerx = WIDTH // 2
         self.rect.bottom = HEIGHT
+        self.last_moved = 0
     
     def draw(self):
         self.img.set_alpha(active_color[0] / 255 * 150 + 105)
@@ -108,6 +110,21 @@ class Enemy():
                         return True
         return False
 
+class TemporaryEnemy(Enemy):
+    def __init__(self, img):
+        super().__init__(img)
+        self.rect.centerx = gierek.rect.centerx + random.randint(-PLAYER_WIDTH,PLAYER_WIDTH)
+    
+    def update(self):
+        self.rect.y += self.velocity_y
+        self.velocity_y += self.accel
+        if self.rect.top > HEIGHT:
+            self.rect.y = -self.rect.height
+            self.rect.x = random.randint(0, WIDTH - self.rect.width)
+            self.velocity_y = 0
+            enemies.remove(self)
+
+
 score = 0
 
 def draw_score():
@@ -115,6 +132,7 @@ def draw_score():
     scr.blit(surf, (WIDTH - surf.get_width(), 0))
 
 gierek = Player(MATEUSZ_IMG)
+enemies = list()
 enemies = [Enemy(ENEMY_IMG) for _ in range(1)]
 
 def get_next_color(current: tuple, is_day: bool) -> tuple[tuple, bool]:
@@ -151,14 +169,22 @@ while running:
         gierek.x_vel += gierek.accel
     if k_pressed[pygame.K_a]:
         gierek.x_vel -= gierek.accel
+
     if k_pressed[pygame.K_s]:
         friction = 0.8
     else:
         friction = 0.97
 
+    if abs(gierek.x_vel) > 1:
+        gierek.last_moved = game_time
+
     gierek.x_vel *= friction # tarcie
     gierek.rect.x += gierek.x_vel
     
+
+    if game_time - gierek.last_moved > 100:
+        enemies.append(TemporaryEnemy(ENEMY_IMG))
+        gierek.last_moved = game_time
 
     if game_time % 400 == 0:
         for _ in range(2): enemies.append(Enemy(ENEMY_IMG))
